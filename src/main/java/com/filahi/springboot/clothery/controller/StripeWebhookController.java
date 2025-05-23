@@ -117,27 +117,6 @@ public class StripeWebhookController {
         // Find customer by Auth0Id
         Customer customer = findCustomerByAuth0Id(auth0Id);
 
-
-//        // Find customer by Auth0Id
-//        Customer customer = this.customerRepository.findByAuth0Id(auth0Id);
-//        if (customer == null) {
-//
-//            // Try finding by removing any pipe characters or other formatting
-//            String simplifiedAuth0Id = auth0Id.replace("|", "");
-//            customer = this.customerRepository.findByAuth0Id(simplifiedAuth0Id);
-//
-//            if (customer == null) {
-//                // Try with just the ID portion after the pipe
-//                if (auth0Id.contains("|")) {
-//                    String idPortion = auth0Id.split("\\|")[1];
-//                    customer = this.customerRepository.findByAuth0Id(idPortion);
-//                }
-//            }
-//
-//            if (customer == null)
-//                throw new NoResultException("Customer not found with Auth0 ID: " + auth0Id);
-//        }
-
         Order order = new Order();
         order.setStripeSessionId(session.getId());
         order.setShippingAddress(address);

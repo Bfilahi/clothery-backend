@@ -19,12 +19,13 @@ public class StripeServiceImpl implements IStripeService {
     @Value("${stripe.api.key}")
     private String apiKey;
 
+    @Value("${currency}")
+    private String currency;
+
     @Override
     public StripeResponseDTO checkout(PaymentRequestDTO paymentRequestDTO) throws StripeException {
 
         Stripe.apiKey = this.apiKey;
-
-        String currency = "EUR";
 
         // Create session params builder
         SessionCreateParams.Builder paramsBuilder = SessionCreateParams.builder()
@@ -54,7 +55,7 @@ public class StripeServiceImpl implements IStripeService {
                             .setDescription("Clothery purchase");
 
             SessionCreateParams.LineItem.PriceData priceData = SessionCreateParams.LineItem.PriceData.builder()
-                    .setCurrency(currency)
+                    .setCurrency(this.currency)
                     .setUnitAmount(item.getAmount())
                     .setProductData(productDataBuilder.build())
                     .build();

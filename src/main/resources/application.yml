@@ -7,7 +7,7 @@ spring:
     driver-class-name: org.postgresql.Driver
     url: jdbc:postgresql://localhost:5432/clotheryDB
     username: postgres
-    password: Vandersar7
+    password: ${DB_PASSWORD}
 
 
   jpa:
@@ -36,7 +36,10 @@ okta:
 
 stripe:
   api:
-    key: sk_test_51QiIncRpFKnyLPIO6c4a0PVH5Ibi9zYWdpyewtfEsakKcEZLoY1IrBVmxj0ulg5VvyKPI8atLDqf69FZs7mj6Qp300u2GNMrUb
+    key: ${STRIPE_API_KEY}
 
   webhook:
-    secret: whsec_4da64258a70be6bf9173784d7da2d409a3987a97956ec9dbb256c3a7a9a68d17
+    secret: ${STRIPE_WEBHOOK_SECRET}
+
+
+currency: EUR
