@@ -16,11 +16,6 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
 
-  data:
-    rest:
-      base-path: /api
-
-
   servlet:
     multipart:
       enabled: true
