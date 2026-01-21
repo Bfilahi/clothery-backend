@@ -5,9 +5,12 @@ import com.filahi.springboot.clothery.exception.domain.NotTheCorrectImageFileExc
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
 
-public interface ICategoryService {
+public interface CategoryService {
     Category addNewCategory(String categoryName, String type, MultipartFile image, Character gender) throws IOException, NotTheCorrectImageFileException;
-    Category updateCategory(String categoryName, String type, MultipartFile image, Character gender) throws IOException, NotTheCorrectImageFileException;
-    void deleteCategory(String type, Character gender) throws IOException;
+    Category updateCategory(long categoryId, String categoryName, String type, MultipartFile image, Character gender) throws IOException, NotTheCorrectImageFileException;
+    void deleteCategory(long categoryId) throws IOException;
+
+    List<Category> getCategories();
 }

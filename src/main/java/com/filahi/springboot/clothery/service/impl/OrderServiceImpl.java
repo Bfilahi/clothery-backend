@@ -2,20 +2,20 @@ package com.filahi.springboot.clothery.service.impl;
 
 import com.filahi.springboot.clothery.entity.Address;
 import com.filahi.springboot.clothery.entity.Order;
-import com.filahi.springboot.clothery.repository.IOrderRepository;
-import com.filahi.springboot.clothery.service.IOrderService;
+import com.filahi.springboot.clothery.repository.OrderRepository;
+import com.filahi.springboot.clothery.service.OrderService;
 import jakarta.persistence.NoResultException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-public class OrderServiceImpl implements IOrderService {
+public class OrderServiceImpl implements OrderService {
 
-    private final IOrderRepository orderRepository;
+    private final OrderRepository orderRepository;
 
     @Autowired
-    public OrderServiceImpl(IOrderRepository orderRepository){
+    public OrderServiceImpl(OrderRepository orderRepository){
         this.orderRepository = orderRepository;
     }
 

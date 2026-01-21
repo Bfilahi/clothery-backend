@@ -19,26 +19,26 @@ import java.util.Set;
 public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    private Long id;
+    @Column(name = "id", nullable = false, unique = true)
+    private long id;
 
-    @Column(name = "total_quantity")
+    @Column(name = "total_quantity", nullable = false)
     private int totalQuantity;
 
-    @Column(name = "total_price")
+    @Column(name = "total_price", nullable = false)
     private BigDecimal totalPrice;
 
-    @Column(name = "stripe_session_id")
+    @Column(name = "stripe_session_id", nullable = false)
     private String stripeSessionId;
 
-    @Column(name = "order_tracking_number")
+    @Column(name = "order_tracking_number", nullable = false)
     private String orderTrackingNumber;
 
     @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "shipping_address_id")
+    @JoinColumn(name = "shipping_address_id", nullable = false)
     private Address shippingAddress;
 
-    @Column(name = "date_created")
+    @Column(name = "date_created", updatable = false)
     @CreationTimestamp
     private LocalDateTime dateCreated;
 
@@ -46,11 +46,11 @@ public class Order {
     @UpdateTimestamp
     private LocalDateTime dateUpdated;
 
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "order")
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "order", fetch = FetchType.EAGER)
     private Set<OrderItem> orderItems = new HashSet<>();
 
     @ManyToOne
-    @JoinColumn(name = "customer_id")
+    @JoinColumn(name = "customer_id", nullable = false)
     private Customer customer;
 
     public void add(OrderItem orderItem){

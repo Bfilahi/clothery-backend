@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+
 @Entity
 @Table(name = "hero")
 @Getter
@@ -13,11 +14,12 @@ public class Hero {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
-    public Long id;
+    private long id;
 
-    @Column(name = "left_image")
-    public String leftImage;
+    private String leftImgUrl;
+    private String leftPublicId;
 
-    @Column(name = "right_image")
-    public String rightImage;
+    private String rightImgUrl;
+    private String rightPublicId;
+
 }

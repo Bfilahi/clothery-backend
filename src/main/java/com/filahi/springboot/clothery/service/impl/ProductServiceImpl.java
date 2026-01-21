@@ -1,243 +1,245 @@
 package com.filahi.springboot.clothery.service.impl;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.filahi.springboot.clothery.dto.SizeQuantityDTO;
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
+import com.filahi.springboot.clothery.dto.ProductResponseDTO;
 import com.filahi.springboot.clothery.entity.Category;
 import com.filahi.springboot.clothery.entity.Image;
 import com.filahi.springboot.clothery.entity.Product;
 import com.filahi.springboot.clothery.entity.Size;
 import com.filahi.springboot.clothery.exception.domain.NotTheCorrectImageFileException;
-import com.filahi.springboot.clothery.repository.ICategoryRepository;
-import com.filahi.springboot.clothery.repository.IProductRepository;
-import com.filahi.springboot.clothery.repository.ISizeRepository;
-import com.filahi.springboot.clothery.service.IProductService;
-import jakarta.persistence.NoResultException;
-import org.apache.tomcat.util.http.fileupload.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.filahi.springboot.clothery.repository.CategoryRepository;
+import com.filahi.springboot.clothery.repository.ImageRepository;
+import com.filahi.springboot.clothery.repository.ProductRepository;
+import com.filahi.springboot.clothery.repository.SizeRepository;
+import com.filahi.springboot.clothery.service.ProductService;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-
-import static com.filahi.springboot.clothery.constant.Constants.*;
-import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+import java.util.*;
 
 @Service
-public class ProductServiceImpl implements IProductService {
+public class ProductServiceImpl implements ProductService {
 
-    private final ICategoryRepository ICategoryRepository;
-    private final IProductRepository IProductRepository;
-    private final ISizeRepository ISizeRepository;
-
-    private final MediaType IMAGE_AVIF = new MediaType("image", "avif");
-    private final Logger LOGGER = LoggerFactory.getLogger(getClass());
+    private final CategoryRepository categoryRepository;
+    private final ProductRepository productRepository;
+    private final SizeRepository sizeRepository;
+    private final ImageRepository imageRepository;
+    private final Cloudinary cloudinary;
 
 
     @Autowired
-    public ProductServiceImpl(ICategoryRepository ICategoryRepository,
-                              IProductRepository IProductRepository,
-                              ISizeRepository ISizeRepository){
+    public ProductServiceImpl(CategoryRepository CategoryRepository,
+                              ProductRepository ProductRepository,
+                              SizeRepository SizeRepository, ImageRepository imageRepository, Cloudinary cloudinary){
 
-        this.ICategoryRepository = ICategoryRepository;
-        this.IProductRepository = IProductRepository;
-        this.ISizeRepository = ISizeRepository;
+        this.categoryRepository = CategoryRepository;
+        this.productRepository = ProductRepository;
+        this.sizeRepository = SizeRepository;
+        this.imageRepository = imageRepository;
+        this.cloudinary = cloudinary;
     }
 
 
     @Override
     @Transactional
-    public Product addNewProduct(String productName,
+    public ProductResponseDTO addNewProduct(String productName,
                                  String description,
                                  BigDecimal price,
-                                 String categoryId,
-                                 String sizesJson,
+                                 int unitsInStock,
+                                 long categoryId,
+                                 List<Long> sizeIds,
                                  MultipartFile[] images) throws NotTheCorrectImageFileException, IOException {
 
-        Optional<Category> theCategory = this.ICategoryRepository.findById(Long.parseLong(categoryId));
+        Category category = this.categoryRepository.findById(categoryId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found"));
 
-        if(theCategory.isEmpty())
-            throw new NoResultException(CATEGORY_NOT_FOUND);
+        Product product = new Product();
+        product.setId(0);
+        product.setProductName(productName);
+        product.setDescription(description);
+        product.setUnitPrice(price);
+        product.setUnitsInStock(unitsInStock);
+        product.setCategory(category);
+        product.setGender(category.getGender());
+        product.setSizes(getSizesById(sizeIds));
 
-        Product existingProduct = this.IProductRepository.find(productName, description, theCategory.get().getGender());
+        this.productRepository.save(product);
+        saveImages(product, images);
 
-        if(existingProduct != null)
-            return setAndSave(existingProduct, productName, description, price, theCategory, sizesJson, images);
+        List<Image> productImages = this.imageRepository.findByProductId(product.getId());
 
-        Product theProduct = new Product();
-        return setAndSave(theProduct, productName, description, price, theCategory, sizesJson, images);
-    }
-
-
-    @Override
-    public List<Product> getProducts(Character gender) {
-        return this.IProductRepository.findByGender(gender);
-    }
-
-    @Override
-    public Product getProduct(Long id) {
-        Product theProduct = this.IProductRepository.findProductById(id);
-
-        if(theProduct == null)
-            throw new NoResultException(PRODUCT_NOT_FOUND);
-
-        return theProduct;
-    }
-
-    @Override
-    public List<Product> getProductsByCategory(Long id) {
-        return this.IProductRepository.findProductsByCategory(id);
-    }
-
-    @Override
-    public List<Product> searchProducts(String keyword) {
-        return this.IProductRepository.searchByKeyword(keyword);
+        return convertToProductResponseDTO(product, productImages);
     }
 
 
     @Override
     @Transactional
-    public void deleteProduct(Long id) throws IOException {
-        Optional<Product> product = this.IProductRepository.findById(id);
-
-        if(product.isEmpty())
-            throw new NoResultException(PRODUCT_NOT_FOUND);
-
-        Path productFolder = Paths.get(PRODUCT_FOLDER + getGender(product.get().getGender()) + SEPARATOR +
-                product.get().getCategory().getType() + SEPARATOR + product.get().getProductName().replace(" ", "_")).toAbsolutePath().normalize();
-
-        FileUtils.deleteDirectory(productFolder.toFile());
-
-        this.IProductRepository.deleteById(id);
-    }
-
-    @Override
-    @Transactional
-    public Product updateProduct(Long id,
+    public ProductResponseDTO updateProduct(long productId,
                                  String productName,
                                  String description,
                                  BigDecimal price,
-                                 String categoryId,
-                                 String sizesJson,
+                                 int unitsInStock,
+                                 long categoryId,
+                                 List<Long> sizeIds,
                                  MultipartFile[] images) throws IOException {
 
-        Optional<Product> existingProduct  = this.IProductRepository.findById(id);
-        Optional<Category> theCategory = this.ICategoryRepository.findById(Long.parseLong(categoryId));
+        Product product = this.productRepository.findById(productId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
 
-        if(existingProduct.isEmpty())
-            throw new NoResultException(PRODUCT_NOT_FOUND);
+        Category category = this.categoryRepository.findById(categoryId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found"));
 
-        return setAndSave(existingProduct.get(), productName, description, price, theCategory, sizesJson, images);
+        List<Image> oldImages = this.imageRepository.findByProductId(productId);
+
+        product.setProductName(productName);
+        product.setDescription(description);
+        product.setUnitPrice(price);
+        product.setUnitsInStock(unitsInStock);
+        product.setCategory(category);
+        product.setGender(category.getGender());
+        product.setSizes(getSizesById(sizeIds));
+
+        deleteImagesFromCloudinary(oldImages);
+        this.productRepository.save(product);
+        saveImages(product, images);
+
+        List<Image> productImages = this.imageRepository.findByProductId(product.getId());
+
+        return convertToProductResponseDTO(product, oldImages);
     }
 
+    @Override
     @Transactional
-    private Product setAndSave(Product theProduct,
-                              String productName,
-                              String description,
-                              BigDecimal price,
-                              Optional<Category> category,
-                              String sizesJson,
-                              MultipartFile[] images) throws NotTheCorrectImageFileException, IOException {
+    public void deleteProduct(long productId) throws IOException {
+        Product product = this.productRepository.findById(productId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
 
+        List<Image> images = this.imageRepository.findByProductId(productId);
 
-        theProduct.setProductName(productName);
-        theProduct.setDescription(description);
-        theProduct.setUnitPrice(price);
-        theProduct.setGender(category.get().getGender());
-        theProduct.setCategory(category.get());
-
-        ObjectMapper objectMapper = new ObjectMapper();
-        List<SizeQuantityDTO> sizeQuantities = objectMapper.readValue(
-                sizesJson,
-                new TypeReference<List<SizeQuantityDTO>>() {}
-        );
-
-
-        this.ISizeRepository.deleteByProductId(theProduct.getId());
-
-        theProduct.clearSizes();
-        for(SizeQuantityDTO sizeQty: sizeQuantities)
-            theProduct.addSizes(sizeQty.getSize(), sizeQty.getQuantity());
-
-
-        Integer unitsInSock = 0;
-        for(Size sq : theProduct.getSizes()){
-            unitsInSock += sq.getQuantity();
+        if(!images.isEmpty()){
+            this.productRepository.delete(product);
+            deleteImagesFromCloudinary(images);
         }
+    }
 
-        theProduct.setUnitsInStock(unitsInSock);
+    @Override
+    public List<ProductResponseDTO> getProducts(Character gender) {
+        List<Product> products = this.productRepository.findByGender(gender);
 
-        theProduct.getImages().clear();
+        return convertToProductResponseDTO(products);
+    }
+
+    @Override
+    public ProductResponseDTO getProduct(long productId) {
+        Product product = this.productRepository.findById(productId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
+
+        List<Image> images = this.imageRepository.findByProductId(product.getId());
+
+        return convertToProductResponseDTO(product, images);
+    }
+
+    @Override
+    public List<ProductResponseDTO> getProductsByCategory(long id) {
+        List<Product> products = this.productRepository.findProductsByCategory(id);
+
+        return convertToProductResponseDTO(products);
+    }
+
+    @Override
+    public List<ProductResponseDTO> searchProducts(String keyword) {
+        List<Product> products = this.productRepository.searchByKeyword(keyword);
+
+        return convertToProductResponseDTO(products);
+    }
+
+    private void saveImages(Product product, MultipartFile[] images) throws IOException {
         if(images != null && images.length > 0){
-            List<Image> imageEntities = new ArrayList<>();
-            for(int i = 0; i < images.length; i++){
-                MultipartFile image = images[i];
-                Image imageEntity = saveImage(theProduct, image, i);
-                imageEntities.add(imageEntity);
+            this.imageRepository.clearImages(product.getId());
+
+            List<Image> imageList = new ArrayList<>();
+
+            for (MultipartFile image : images) {
+                Image imageEntity = new Image();
+
+                Map<?,?> uploadResult = uploadImage(image);
+                imageEntity.setPublicId((String) uploadResult.get("public_id"));
+                imageEntity.setImgUrl((String) uploadResult.get("url"));
+
+                imageEntity.setProduct(product);
+                imageList.add(imageEntity);
             }
-            theProduct.getImages().addAll(imageEntities);
+            this.imageRepository.saveAll(imageList);
         }
-
-
-        this.IProductRepository.save(theProduct);
-
-        return theProduct;
     }
 
-
-    private Image saveImage(Product product, MultipartFile image, int index) throws NotTheCorrectImageFileException, IOException {
-        if(!Objects.equals(image.getContentType(), IMAGE_AVIF.toString()))
-            throw new NotTheCorrectImageFileException(image.getOriginalFilename() + " " + INCORRECT_IMAGE_FILE);
-
-        if(image.getSize() > MAX_FILE_SIZE)
-            throw new NotTheCorrectImageFileException(FILE_TOO_BIG);
-
-        Path productFolder = Paths.get(PRODUCT_FOLDER + getGender(product.getGender()) + SEPARATOR +
-                product.getCategory().getType() + SEPARATOR + product.getProductName().replace(" ", "_")).toAbsolutePath().normalize();
-
-
-        if(!Files.exists(productFolder)){
-            Files.createDirectories(productFolder);
-            LOGGER.info(DIRECTORY_CREATED + "{}", productFolder);
+    private Map<?,?> uploadImage(MultipartFile file) throws IOException {
+        try{
+            return (Map<?,?>) this.cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap(
+                    "folder", "clothery"
+            ));
+        }catch (IOException exception){
+            throw new IOException("Failed to upload image to Cloudinary.", exception);
         }
-
-        String fileName = product.getProductName().replace(" ", "_") + UNDERSCORE + index + DOT + AVIF_EXTENSION;
-        Path targetFolder = productFolder.resolve(fileName);
-
-        Files.deleteIfExists(targetFolder);
-        Files.copy(image.getInputStream(), targetFolder, REPLACE_EXISTING);
-
-        Image imageEntity = new Image();
-        imageEntity.setImgUrl(setTheImgUrl(product.getProductName(), getGender(product.getGender()), product.getCategory().getType(), fileName));
-        imageEntity.setProduct_img(product);
-
-        LOGGER.info(FILE_SAVED_IN_FILE_SYSTEM + "{}", image.getOriginalFilename());
-
-        return imageEntity;
     }
 
-    private String setTheImgUrl(String productName, String gender, String type, String fileName){
-        return ServletUriComponentsBuilder.fromCurrentContextPath().path(PRODUCT_IMAGE_PATH + gender + SEPARATOR + type + SEPARATOR +
-                productName.replace(" ", "_") + SEPARATOR + fileName).toUriString();
+    private void deleteImagesFromCloudinary(List<Image> images) throws IOException {
+        try{
+            for(Image image : images){
+                this.cloudinary.uploader().destroy(image.getPublicId(), ObjectUtils.asMap(
+                        "folder", "clothery"
+                ));
+            }
+        }catch (IOException exception){
+            throw new IOException("Failed to delete image from Cloudinary.", exception);
+        }
     }
 
-    private String getGender(Character g){
-        if(g.equals('M'))
-            return "men";
-        else
-            return "women";
+    private List<Size> getSizesById(List<Long> sizeIds) {
+        if(sizeIds == null || sizeIds.isEmpty())
+            throw new IllegalArgumentException("size ids cannot be empty");
+
+        List<Size> sizes = this.sizeRepository.findAllById(sizeIds);
+
+        if(sizes.size() != sizeIds.size())
+            throw new EntityNotFoundException("size ids not found");
+
+        return sizes;
+    }
+
+    private static ProductResponseDTO convertToProductResponseDTO(Product product, List<Image> productImages) {
+        return new ProductResponseDTO(
+                product.getId(),
+                product.getProductName(),
+                product.getDescription(),
+                product.getGender(),
+                product.getUnitPrice(),
+                product.getUnitsInStock(),
+                product.getCategory(),
+                product.getSizes(),
+                productImages
+        );
+    }
+
+    private List<ProductResponseDTO> convertToProductResponseDTO(List<Product> products) {
+        return products.stream().map(product -> new ProductResponseDTO(
+                product.getId(),
+                product.getProductName(),
+                product.getDescription(),
+                product.getGender(),
+                product.getUnitPrice(),
+                product.getUnitsInStock(),
+                product.getCategory(),
+                product.getSizes(),
+                this.imageRepository.findByProductId(product.getId())
+        )).toList();
     }
 }

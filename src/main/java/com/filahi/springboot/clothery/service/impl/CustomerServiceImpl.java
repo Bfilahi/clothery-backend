@@ -1,8 +1,8 @@
 package com.filahi.springboot.clothery.service.impl;
 
 import com.filahi.springboot.clothery.entity.Customer;
-import com.filahi.springboot.clothery.repository.ICustomerRepository;
-import com.filahi.springboot.clothery.service.ICustomerService;
+import com.filahi.springboot.clothery.repository.CustomerRepository;
+import com.filahi.springboot.clothery.service.CustomerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -10,12 +10,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional
-public class ICustomerServiceImpl implements ICustomerService {
+public class CustomerServiceImpl implements CustomerService {
 
-    private final ICustomerRepository customerRepository;
+    private final CustomerRepository customerRepository;
 
     @Autowired
-    public ICustomerServiceImpl(ICustomerRepository customerRepository) {
+    public CustomerServiceImpl(CustomerRepository customerRepository) {
         this.customerRepository = customerRepository;
     }
 

@@ -17,7 +17,7 @@ public class Category {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
-    private Long id;
+    private long id;
 
     @Column(name = "name")
     private String categoryName;
@@ -28,10 +28,13 @@ public class Category {
     @Column(name = "img_url")
     private String imgUrl;
 
+    @Column(name = "public_id")
+    private String publicId;
+
     @Column(name = "gender")
     private Character gender;
 
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "category")
+    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     private List<Product> products;
 

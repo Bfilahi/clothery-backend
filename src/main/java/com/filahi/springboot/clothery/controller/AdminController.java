@@ -1,17 +1,18 @@
 package com.filahi.springboot.clothery.controller;
 
 
-import com.filahi.springboot.clothery.domain.HttpResponse;
 import com.filahi.springboot.clothery.dto.ProductResponseDTO;
 
 import com.filahi.springboot.clothery.entity.Category;
 import com.filahi.springboot.clothery.entity.Hero;
-import com.filahi.springboot.clothery.entity.Product;
+import com.filahi.springboot.clothery.entity.Size;
+import com.filahi.springboot.clothery.exception.ExceptionResponse;
 import com.filahi.springboot.clothery.exception.domain.NotTheCorrectImageFileException;
-import com.filahi.springboot.clothery.service.ICategoryService;
-import com.filahi.springboot.clothery.service.IHeroService;
-import com.filahi.springboot.clothery.service.IProductService;
+import com.filahi.springboot.clothery.service.CategoryService;
+import com.filahi.springboot.clothery.service.HeroService;
+import com.filahi.springboot.clothery.service.ProductService;
 
+import com.filahi.springboot.clothery.service.SizeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -21,26 +22,30 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.List;
 
 
 @RestController
 @RequestMapping("/admin")
 public class AdminController {
-    private final ICategoryService ICategoryService;
-    private final IProductService IProductService;
-    private final IHeroService IHeroService;
+    private final CategoryService categoryService;
+    private final ProductService productService;
+    private final HeroService heroService;
+    private final SizeService sizeService;
     private static final String CATEGORY_DELETED_SUCCESSFULLY = "Category deleted successfully";
     private static final String PRODUCT_DELETED_SUCCESSFULLY = "Product deleted successfully";
+    private static final String SIZE_DELETED_SUCCESSFULLY = "Size deleted successfully";
 
 
     @Autowired
-    public AdminController(ICategoryService ICategoryService,
-                           IProductService IProductService,
-                           IHeroService IHeroService){
+    public AdminController(CategoryService CategoryService,
+                           ProductService ProductService,
+                           HeroService HeroService, SizeService sizeService){
 
-        this.ICategoryService = ICategoryService;
-        this.IProductService = IProductService;
-        this.IHeroService = IHeroService;
+        this.categoryService = CategoryService;
+        this.productService = ProductService;
+        this.heroService = HeroService;
+        this.sizeService = sizeService;
     }
 
 
@@ -50,74 +55,87 @@ public class AdminController {
                                                    @RequestParam("imgUrl") MultipartFile image,
                                                    @RequestParam("gender") Character gender) throws IOException, NotTheCorrectImageFileException {
 
-        Category theCategory = this.ICategoryService.addNewCategory(categoryName, type, image, gender);
+        Category theCategory = this.categoryService.addNewCategory(categoryName, type, image, gender);
+        return new ResponseEntity<>(theCategory, HttpStatus.CREATED);
+    }
+
+    @PutMapping("/category/update/{categoryId}")
+    public ResponseEntity<Category> updateCategory(@PathVariable("categoryId") long categoryId,
+                                                   @RequestParam("categoryName") String categoryName,
+                                                   @RequestParam("type") String type,
+                                                   @RequestParam("imgUrl") MultipartFile image,
+                                                   @RequestParam("gender") Character gender) throws IOException, NotTheCorrectImageFileException {
+
+        Category theCategory = this.categoryService.updateCategory(categoryId, categoryName, type, image, gender);
         return new ResponseEntity<>(theCategory, HttpStatus.OK);
     }
 
-    @DeleteMapping("/category/{type}/{gender}")
-    public ResponseEntity<HttpResponse> deleteCategory(@PathVariable("type") String type, @PathVariable("gender") Character gender) throws IOException {
-        this.ICategoryService.deleteCategory(type, gender);
+    @DeleteMapping("/category/{categoryId}")
+    public ResponseEntity<ExceptionResponse> deleteCategory(@PathVariable("categoryId") long categoryId) throws IOException {
+        this.categoryService.deleteCategory(categoryId);
         return response(HttpStatus.OK, CATEGORY_DELETED_SUCCESSFULLY);
     }
-
-    @PutMapping("/category/update")
-    public ResponseEntity<Category> updateCategory(@RequestParam("categoryName") String categoryName,
-                                                       @RequestParam("type") String type,
-                                                       @RequestParam("imgUrl") MultipartFile image,
-                                                       @RequestParam("gender") Character gender) throws IOException, NotTheCorrectImageFileException {
-
-        Category theCategory = this.ICategoryService.updateCategory(categoryName, type, image, gender);
-        return new ResponseEntity<>(theCategory, HttpStatus.OK);
-    }
-
-
-
 
     @PostMapping("/product/add")
     public ResponseEntity<ProductResponseDTO> addNewProduct(@RequestParam("productName") String productName,
                                                             @RequestParam("description") String description,
                                                             @RequestParam("price") BigDecimal price,
-                                                            @RequestParam("categoryId") String categoryId,
-                                                            @RequestParam("sizes") String sizes,
-                                                            @RequestParam("image") MultipartFile[] images) throws IOException, NotTheCorrectImageFileException {
+                                                            @RequestParam("unitsInStock") int unitsInStock,
+                                                            @RequestParam("categoryId") long categoryId,
+                                                            @RequestParam("sizeIds") List<Long> sizeIds,
+                                                            @RequestParam("images") MultipartFile[] images) throws IOException, NotTheCorrectImageFileException {
 
-        Product theProduct = this.IProductService.addNewProduct(productName, description, price, categoryId, sizes, images);
-        return new ResponseEntity<>(new ProductResponseDTO(theProduct), HttpStatus.OK);
+        ProductResponseDTO product = this.productService.addNewProduct(productName, description, price, unitsInStock, categoryId, sizeIds, images);
+        return new ResponseEntity<>(product, HttpStatus.CREATED);
     }
 
-    @DeleteMapping("/product/{id}")
-    public ResponseEntity<HttpResponse> deleteProduct(@PathVariable("id") Long id) throws IOException {
-        this.IProductService.deleteProduct(id);
+    @PutMapping(value = "/product/update/{productId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ProductResponseDTO> updateProduct(@PathVariable("productId") long productId,
+                                                            @RequestParam("productName") String productName,
+                                                            @RequestParam("description") String description,
+                                                            @RequestParam("price") BigDecimal price,
+                                                            @RequestParam("unitsInStock") int unitsInStock,
+                                                            @RequestParam("categoryId") long categoryId,
+                                                            @RequestParam("sizeIds") List<Long> sizeIds,
+                                                            @RequestParam("images") MultipartFile[] images) throws IOException {
+
+        ProductResponseDTO product = this.productService.updateProduct(productId, productName, description, price, unitsInStock, categoryId, sizeIds, images);
+        return new ResponseEntity<>(product, HttpStatus.OK);
+    }
+
+    @DeleteMapping("/product/{productId}")
+    public ResponseEntity<ExceptionResponse> deleteProduct(@PathVariable("productId") long productId) throws IOException {
+        this.productService.deleteProduct(productId);
         return response(HttpStatus.OK, PRODUCT_DELETED_SUCCESSFULLY);
     }
-
-    @PutMapping(value = "/product/update/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ProductResponseDTO> updateProduct(@PathVariable("id") Long id,
-                                                 @RequestParam("productName") String productName,
-                                                 @RequestParam("description") String description,
-                                                 @RequestParam("price") BigDecimal price,
-                                                 @RequestParam("categoryId") String categoryId,
-                                                 @RequestParam("sizes") String sizesJson,
-                                                 @RequestParam("image") MultipartFile[] images) throws IOException {
-
-
-        Product theProduct = this.IProductService.updateProduct(id, productName, description, price, categoryId, sizesJson, images);
-
-        return new ResponseEntity<>(new ProductResponseDTO(theProduct), HttpStatus.OK);
-    }
-
 
     @PostMapping("/hero/add")
     public ResponseEntity<Hero> addHeroImages(@RequestParam("left_image") MultipartFile leftImage,
                                               @RequestParam("right_image") MultipartFile rightImage) throws IOException {
 
-        Hero hero = this.IHeroService.addHeroImages(leftImage, rightImage);
-
-        return new ResponseEntity<>(hero, HttpStatus.OK);
+        Hero hero = this.heroService.addHeroImages(leftImage, rightImage);
+        return new ResponseEntity<>(hero, HttpStatus.CREATED);
     }
 
+    @GetMapping("/sizes")
+    public ResponseEntity<List<Size>> getSizes(){
+        List<Size> sizes = this.sizeService.getSizes();
+        return new ResponseEntity<>(sizes, HttpStatus.OK);
+    }
 
-    private ResponseEntity<HttpResponse> response(HttpStatus httpStatus, String message){
-        return new ResponseEntity<>(new HttpResponse(httpStatus.value(), httpStatus, httpStatus.getReasonPhrase().toUpperCase(), message), httpStatus);
+    @PostMapping("/size/add")
+    public ResponseEntity<Size> addNewSize(@RequestBody String size){
+        Size theSize = this.sizeService.addSize(size);
+        return new  ResponseEntity<>(theSize, HttpStatus.CREATED);
+    }
+
+    @DeleteMapping("/size/{sizeId}")
+    public ResponseEntity<ExceptionResponse> deleteSize(@PathVariable("sizeId") long sizeId){
+        this.sizeService.deleteSize(sizeId);
+        return response(HttpStatus.OK, SIZE_DELETED_SUCCESSFULLY);
+    }
+
+    private ResponseEntity<ExceptionResponse> response(HttpStatus httpStatus, String message){
+        return new ResponseEntity<>(new ExceptionResponse(httpStatus.value(), message, System.currentTimeMillis()), httpStatus);
     }
 }

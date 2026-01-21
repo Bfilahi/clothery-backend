@@ -3,36 +3,34 @@ package com.filahi.springboot.clothery.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
+
+import java.util.List;
 
 @Entity
 @Table(name = "sizes")
 @Getter
 @Setter
+@ToString
 public class Size {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    private Long id;
+    @Column(name = "id", nullable = false, unique = true)
+    private long id;
 
-    @Column(name = "size")
+    @Column(name = "size", nullable = false)
     private String size;
 
-    @Column(name = "quantity")
-    private Integer quantity = 0;
-
-    @ManyToOne
-    @JoinColumn(name = "product_id")
+    @ManyToMany(mappedBy = "sizes")
     @JsonIgnore
-    private Product product;
+    private List<Product> products;
 
-    @Override
-    public String toString() {
-        return "Size{" +
-                "size='" + size + '\'' +
-                "quantity=" + quantity + '\'' +
-                '}';
+    public Size(){}
+
+    public Size(long id, String size) {
+        this.id = id;
+        this.size = size;
     }
+
 }

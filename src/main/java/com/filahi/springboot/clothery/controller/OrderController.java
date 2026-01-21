@@ -3,8 +3,8 @@ package com.filahi.springboot.clothery.controller;
 import com.filahi.springboot.clothery.dto.OrderResponseDTO;
 import com.filahi.springboot.clothery.entity.Customer;
 import com.filahi.springboot.clothery.entity.Order;
-import com.filahi.springboot.clothery.repository.ICustomerRepository;
-import com.filahi.springboot.clothery.repository.IOrderRepository;
+import com.filahi.springboot.clothery.repository.CustomerRepository;
+import com.filahi.springboot.clothery.repository.OrderRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -20,11 +20,11 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/orders")
 public class OrderController {
 
-    private final IOrderRepository orderRepository;
-    private final ICustomerRepository customerRepository;
+    private final OrderRepository orderRepository;
+    private final CustomerRepository customerRepository;
 
     @Autowired
-    public OrderController(IOrderRepository orderRepository, ICustomerRepository customerRepository) {
+    public OrderController(OrderRepository orderRepository, CustomerRepository customerRepository) {
         this.orderRepository = orderRepository;
         this.customerRepository = customerRepository;
     }
@@ -70,7 +70,7 @@ public class OrderController {
 
         Order order = orderOpt.get();
 
-        if (!order.getCustomer().getId().equals(customer.getId()))
+        if(!(order.getCustomer().getId() == customer.getId()))
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 
         return ResponseEntity.ok(new OrderResponseDTO(order));

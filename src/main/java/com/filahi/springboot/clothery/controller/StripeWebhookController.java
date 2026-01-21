@@ -1,8 +1,8 @@
 package com.filahi.springboot.clothery.controller;
 
 import com.filahi.springboot.clothery.entity.*;
-import com.filahi.springboot.clothery.repository.ICustomerRepository;
-import com.filahi.springboot.clothery.repository.IProductRepository;
+import com.filahi.springboot.clothery.repository.CustomerRepository;
+import com.filahi.springboot.clothery.repository.ProductRepository;
 
 import com.stripe.exception.StripeException;
 import com.stripe.model.Event;
@@ -20,38 +20,36 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 
-import java.util.Optional;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/webhook")
 public class StripeWebhookController {
 
-    private final IProductRepository productRepository;
-    private final ICustomerRepository customerRepository;
+    private final ProductRepository productRepository;
+    private final CustomerRepository customerRepository;
 
 
     @Value("${stripe.webhook.secret}")
     private String stripeWebhookSecret;
 
     @Autowired
-    public StripeWebhookController(IProductRepository productRepository,
-                                   ICustomerRepository customerRepository){
+    public StripeWebhookController(ProductRepository productRepository,
+                                   CustomerRepository customerRepository){
 
         this.productRepository = productRepository;
         this.customerRepository = customerRepository;
     }
 
-
-
     @PostMapping("/stripe")
     @Transactional
     public ResponseEntity<String> handleStripeWebhook(@RequestBody String payload, @RequestHeader("Stripe-Signature") String sigHeader) {
         try {
-            Event event = Webhook.constructEvent(payload, sigHeader, stripeWebhookSecret);
+            Event event = Webhook.constructEvent(payload, sigHeader, this.stripeWebhookSecret);
 
             // Handle the checkout.session.completed event
             if ("checkout.session.completed".equals(event.getType())) {
@@ -94,12 +92,12 @@ public class StripeWebhookController {
         address.setState(stripeAddress.getState());
         address.setPostalCode(stripeAddress.getPostalCode());
         address.setCountry(stripeAddress.getCountry());
+
         return address;
     }
 
     @Transactional
     private void processCompletedCheckout(Session session, Address address) throws StripeException {
-
         // Retrieve the expanded session with line items
         SessionRetrieveParams params = SessionRetrieveParams.builder()
                 .addExpand("line_items")
@@ -108,7 +106,6 @@ public class StripeWebhookController {
 
         // Get the line items
         LineItemCollection lineItems = expandedSession.getLineItems();
-
 
         String auth0Id = expandedSession.getMetadata().get("auth0Id");
         if (auth0Id == null || auth0Id.isEmpty())
@@ -122,6 +119,9 @@ public class StripeWebhookController {
         order.setShippingAddress(address);
         order.setOrderTrackingNumber(generateOrderTrackingNumber());
 
+        order.setTotalQuantity(0);
+        order.setTotalPrice(BigDecimal.ZERO);
+
         customer.add(order);
 
         // Calculate totals
@@ -130,14 +130,13 @@ public class StripeWebhookController {
 
         // Process each line item
         for (LineItem item : lineItems.getData()) {
-            String productName = item.getDescription();
+            String productName = item.getDescription().trim();
             Long quantity = item.getQuantity();
 
             BigDecimal unitAmount = BigDecimal.valueOf(item.getPrice().getUnitAmount());
 
             // Calculate total amount for this item
             BigDecimal totalAmount = unitAmount.multiply(new BigDecimal(quantity));
-
 
             OrderItem orderItem = new OrderItem();
             orderItem.setName(productName);
@@ -146,19 +145,14 @@ public class StripeWebhookController {
 
             orderItem.setOrder(order);
 
+            Product product = this.productRepository.findByProductName(productName).orElseThrow(
+                    () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found: " + productName)
+            );
 
-            Optional<Product> product = this.productRepository.findByProductName(productName);
+            orderItem.setProduct(product);
 
-            if(product.isPresent()){
-                Product theProduct = product.get();
-                orderItem.setProduct(theProduct);
-
-                if(theProduct.getImages() != null && !theProduct.getImages().isEmpty())
-                    orderItem.setImageUrl(theProduct.getImages().get(0).getImgUrl());
-
-            }
-            else
-                throw new NoResultException("Product not found with name: " + productName);
+            if (product.getImages() != null && !product.getImages().isEmpty())
+                orderItem.setImageUrl(product.getImages().getFirst().getImgUrl());
 
             order.add(orderItem);
 
@@ -194,7 +188,6 @@ public class StripeWebhookController {
         }
         return customer;
     }
-
 
     public static String generateOrderTrackingNumber(){
         return UUID.randomUUID().toString();

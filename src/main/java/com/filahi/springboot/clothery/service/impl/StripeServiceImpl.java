@@ -3,7 +3,7 @@ package com.filahi.springboot.clothery.service.impl;
 import com.filahi.springboot.clothery.dto.LineItemDTO;
 import com.filahi.springboot.clothery.dto.PaymentRequestDTO;
 import com.filahi.springboot.clothery.dto.StripeResponseDTO;
-import com.filahi.springboot.clothery.service.IStripeService;
+import com.filahi.springboot.clothery.service.StripeService;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 import com.stripe.model.checkout.Session;
@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 
 
 @Service
-public class StripeServiceImpl implements IStripeService {
+public class StripeServiceImpl implements StripeService {
 
     @Value("${stripe.api.key}")
     private String apiKey;
@@ -22,16 +22,18 @@ public class StripeServiceImpl implements IStripeService {
     @Value("${currency}")
     private String currency;
 
+    @Value("${frontend.url}")
+    private String frontendUrl;
+
     @Override
     public StripeResponseDTO checkout(PaymentRequestDTO paymentRequestDTO) throws StripeException {
-
         Stripe.apiKey = this.apiKey;
 
         // Create session params builder
         SessionCreateParams.Builder paramsBuilder = SessionCreateParams.builder()
                 .setMode(SessionCreateParams.Mode.PAYMENT)
-                .setSuccessUrl("http://localhost:4200/success?session_id={CHECKOUT_SESSION_ID}")
-                .setCancelUrl("http://localhost:4200/cancel")
+                .setSuccessUrl(frontendUrl + "/success?session_id={CHECKOUT_SESSION_ID}")
+                .setCancelUrl(frontendUrl + "/cancel")
                 .setShippingAddressCollection(
                         SessionCreateParams.ShippingAddressCollection.builder()
                                 .addAllowedCountry(SessionCreateParams.ShippingAddressCollection.AllowedCountry.IT)

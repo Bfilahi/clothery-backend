@@ -2,6 +2,8 @@ package com.filahi.springboot.clothery.repository;
 
 import com.filahi.springboot.clothery.entity.Hero;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
-public interface IHeroRepository extends JpaRepository<Hero, Long> {
+@Repository
+public interface HeroRepository extends JpaRepository<Hero, Long> {
 }

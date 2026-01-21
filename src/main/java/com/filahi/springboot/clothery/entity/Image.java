@@ -14,15 +14,19 @@ public class Image {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    private Long id;
+    @Column(name = "id", nullable = false, unique = true)
+    private long id;
 
-    @Column(name = "img_url")
+    @Column(name = "public_id", nullable = false)
+    private String publicId;
+
+    @Column(name = "img_url", nullable = false)
     private String imgUrl;
 
     @ManyToOne
     @JoinColumn(name = "product_id", nullable = false)
-    private Product product_img;
+    private Product product;
+
 
     @Override
     public String toString() {

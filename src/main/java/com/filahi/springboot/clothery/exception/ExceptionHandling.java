@@ -1,37 +1,29 @@
 package com.filahi.springboot.clothery.exception;
 
-import com.filahi.springboot.clothery.domain.HttpResponse;
-import com.filahi.springboot.clothery.exception.domain.NotTheCorrectImageFileException;
-import jakarta.persistence.NoResultException;
-import org.springframework.boot.web.servlet.error.ErrorController;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 
 
-
-@RestControllerAdvice
-public class ExceptionHandling implements ErrorController {
-
-    @ExceptionHandler(NotTheCorrectImageFileException.class)
-    public ResponseEntity<HttpResponse> notTheCorrectImageFileException(NotTheCorrectImageFileException exception){
-        return createHttpResponse(HttpStatus.BAD_REQUEST, exception.getMessage());
+@ControllerAdvice
+public class ExceptionHandling {
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ExceptionResponse> handleException(ResponseStatusException exception){
+        return buildResponseEntity(exception, HttpStatus.valueOf(exception.getStatusCode().value()));
     }
 
-    @ExceptionHandler(NoResultException.class)
-    public ResponseEntity<HttpResponse> notFoundException(NoResultException exception){
-        return createHttpResponse(HttpStatus.NOT_FOUND, exception.getMessage());
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ExceptionResponse> handleException(Exception exception){
+        return buildResponseEntity(exception, HttpStatus.BAD_REQUEST);
     }
 
-    @ExceptionHandler(MissingServletRequestParameterException.class)
-    public ResponseEntity<HttpResponse> handleMissingParameterException(MissingServletRequestParameterException exception){
-        return createHttpResponse(HttpStatus.BAD_REQUEST, exception.getMessage());
-    }
-
-
-    private ResponseEntity<HttpResponse> createHttpResponse(HttpStatus httpStatus, String message){
-        return new ResponseEntity<>(new HttpResponse(httpStatus.value(), httpStatus, httpStatus.getReasonPhrase().toUpperCase(), message), httpStatus);
+    private ResponseEntity<ExceptionResponse> buildResponseEntity(Exception exception, HttpStatus httpStatus){
+        ExceptionResponse error = new ExceptionResponse();
+        error.setStatus(httpStatus.value());
+        error.setMessage(exception.getMessage());
+        error.setTimestamp(System.currentTimeMillis());
+        return new ResponseEntity<>(error, httpStatus);
     }
 }

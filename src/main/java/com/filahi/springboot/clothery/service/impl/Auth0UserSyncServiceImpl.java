@@ -1,8 +1,8 @@
 package com.filahi.springboot.clothery.service.impl;
 
 import com.filahi.springboot.clothery.entity.Customer;
-import com.filahi.springboot.clothery.repository.ICustomerRepository;
-import com.filahi.springboot.clothery.service.IAuth0UserSyncService;
+import com.filahi.springboot.clothery.repository.CustomerRepository;
+import com.filahi.springboot.clothery.service.Auth0UserSyncService;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,13 +11,13 @@ import org.springframework.stereotype.Service;
 
 
 @Service
-public class Auth0UserSyncServiceImpl implements IAuth0UserSyncService {
+public class Auth0UserSyncServiceImpl implements Auth0UserSyncService {
     private static final Logger LOGGER = LoggerFactory.getLogger(Auth0UserSyncServiceImpl.class);
 
-    private final ICustomerRepository customerRepository;
+    private final CustomerRepository customerRepository;
 
     @Autowired
-    public Auth0UserSyncServiceImpl(ICustomerRepository customerRepository) {
+    public Auth0UserSyncServiceImpl(CustomerRepository customerRepository) {
         this.customerRepository = customerRepository;
     }
 

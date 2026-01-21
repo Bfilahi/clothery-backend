@@ -2,7 +2,7 @@ package com.filahi.springboot.clothery.controller;
 
 import com.filahi.springboot.clothery.dto.UserProfileDTO;
 import com.filahi.springboot.clothery.entity.Customer;
-import com.filahi.springboot.clothery.service.IAuth0UserSyncService;
+import com.filahi.springboot.clothery.service.Auth0UserSyncService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,10 +17,10 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/user")
 public class UserProfileController {
-    private final IAuth0UserSyncService auth0UserSyncService;
+    private final Auth0UserSyncService auth0UserSyncService;
 
     @Autowired
-    public UserProfileController(IAuth0UserSyncService auth0UserSyncService) {
+    public UserProfileController(Auth0UserSyncService auth0UserSyncService) {
         this.auth0UserSyncService = auth0UserSyncService;
     }
 
