@@ -7,7 +7,6 @@ import com.filahi.springboot.clothery.entity.Category;
 import com.filahi.springboot.clothery.entity.Hero;
 import com.filahi.springboot.clothery.entity.Size;
 import com.filahi.springboot.clothery.exception.ExceptionResponse;
-import com.filahi.springboot.clothery.exception.domain.NotTheCorrectImageFileException;
 import com.filahi.springboot.clothery.service.CategoryService;
 import com.filahi.springboot.clothery.service.HeroService;
 import com.filahi.springboot.clothery.service.ProductService;
@@ -53,7 +52,7 @@ public class AdminController {
     public ResponseEntity<Category> addNewCategory(@RequestParam("categoryName") String categoryName,
                                                    @RequestParam("type") String type,
                                                    @RequestParam("imgUrl") MultipartFile image,
-                                                   @RequestParam("gender") Character gender) throws IOException, NotTheCorrectImageFileException {
+                                                   @RequestParam("gender") Character gender) throws IOException {
 
         Category theCategory = this.categoryService.addNewCategory(categoryName, type, image, gender);
         return new ResponseEntity<>(theCategory, HttpStatus.CREATED);
@@ -64,7 +63,7 @@ public class AdminController {
                                                    @RequestParam("categoryName") String categoryName,
                                                    @RequestParam("type") String type,
                                                    @RequestParam("imgUrl") MultipartFile image,
-                                                   @RequestParam("gender") Character gender) throws IOException, NotTheCorrectImageFileException {
+                                                   @RequestParam("gender") Character gender) throws IOException {
 
         Category theCategory = this.categoryService.updateCategory(categoryId, categoryName, type, image, gender);
         return new ResponseEntity<>(theCategory, HttpStatus.OK);
@@ -83,7 +82,7 @@ public class AdminController {
                                                             @RequestParam("unitsInStock") int unitsInStock,
                                                             @RequestParam("categoryId") long categoryId,
                                                             @RequestParam("sizeIds") List<Long> sizeIds,
-                                                            @RequestParam("images") MultipartFile[] images) throws IOException, NotTheCorrectImageFileException {
+                                                            @RequestParam("images") MultipartFile[] images) throws IOException {
 
         ProductResponseDTO product = this.productService.addNewProduct(productName, description, price, unitsInStock, categoryId, sizeIds, images);
         return new ResponseEntity<>(product, HttpStatus.CREATED);

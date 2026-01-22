@@ -7,7 +7,6 @@ import com.filahi.springboot.clothery.entity.Category;
 import com.filahi.springboot.clothery.entity.Image;
 import com.filahi.springboot.clothery.entity.Product;
 import com.filahi.springboot.clothery.entity.Size;
-import com.filahi.springboot.clothery.exception.domain.NotTheCorrectImageFileException;
 import com.filahi.springboot.clothery.repository.CategoryRepository;
 import com.filahi.springboot.clothery.repository.ImageRepository;
 import com.filahi.springboot.clothery.repository.ProductRepository;
@@ -56,7 +55,7 @@ public class ProductServiceImpl implements ProductService {
                                  int unitsInStock,
                                  long categoryId,
                                  List<Long> sizeIds,
-                                 MultipartFile[] images) throws NotTheCorrectImageFileException, IOException {
+                                 MultipartFile[] images) throws IOException {
 
         Category category = this.categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found"));

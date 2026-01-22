@@ -1,7 +1,6 @@
 package com.filahi.springboot.clothery.service;
 
 import com.filahi.springboot.clothery.dto.ProductResponseDTO;
-import com.filahi.springboot.clothery.exception.domain.NotTheCorrectImageFileException;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -16,7 +15,7 @@ public interface ProductService {
             int unitsInStock,
             long categoryId,
             List<Long> sizeIds,
-            MultipartFile[] images) throws NotTheCorrectImageFileException, IOException;
+            MultipartFile[] images) throws IOException;
     ProductResponseDTO updateProduct(
                           long productId,
                           String productName,

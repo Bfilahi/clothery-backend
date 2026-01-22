@@ -3,11 +3,9 @@ package com.filahi.springboot.clothery.service.impl;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.filahi.springboot.clothery.entity.Category;
-import com.filahi.springboot.clothery.exception.domain.NotTheCorrectImageFileException;
 import com.filahi.springboot.clothery.repository.CategoryRepository;
 
 import com.filahi.springboot.clothery.service.CategoryService;
-import jakarta.persistence.NoResultException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -40,7 +38,7 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     @Transactional
-    public Category addNewCategory(String categoryName, String type, MultipartFile image, Character gender) throws IOException, NotTheCorrectImageFileException {
+    public Category addNewCategory(String categoryName, String type, MultipartFile image, Character gender) throws IOException {
         Category category = new Category();
         category.setId(0);
         category.setCategoryName(categoryName);
@@ -59,7 +57,7 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     @Transactional
-    public Category updateCategory(long categoryId, String categoryName, String type, MultipartFile image, Character gender) throws IOException, NotTheCorrectImageFileException {
+    public Category updateCategory(long categoryId, String categoryName, String type, MultipartFile image, Character gender) throws IOException {
         Category category = this.categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found"));
 
