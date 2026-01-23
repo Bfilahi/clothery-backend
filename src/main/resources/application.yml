@@ -26,8 +26,7 @@ okta:
   oauth2:
     issuer: ${OKTA_ISSUER}
     audience: ${OKTA_AUDIENCE}
-#    issuer: https://dev-whcz4g0gwv3v4vle.eu.auth0.com/
-#    audience: https://clothery-app
+    
 
 cloudinary:
   cloud-name: ${CLOUDINARY_CLOUD_NAME}
