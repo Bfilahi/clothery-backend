@@ -1,5 +1,5 @@
 server:
-  port: 8081
+  port: 8080
 
 
 spring:
@@ -24,11 +24,13 @@ spring:
 
 okta:
   oauth2:
-    issuer: https://dev-whcz4g0gwv3v4vle.eu.auth0.com/
-    audience: https://clothery-app
+    issuer: ${OKTA_ISSUER}
+    audience: ${OKTA_AUDIENCE}
+#    issuer: https://dev-whcz4g0gwv3v4vle.eu.auth0.com/
+#    audience: https://clothery-app
 
 cloudinary:
-  cloud-name: dkkusesqq
+  cloud-name: ${CLOUDINARY_CLOUD_NAME}
   api-key: ${CLOUDINARY_API_KEY}
   api-secret: ${CLOUDINARY_API_SECRET}
 
